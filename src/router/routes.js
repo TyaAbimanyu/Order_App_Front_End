@@ -1,23 +1,33 @@
-const routes = [
+import MainLayout from 'layouts/MainLayout.vue'
+import LoginPage from 'pages/LoginPage.vue'
+import SignupPage from 'pages/SignupPage.vue'
+import HomePage from 'pages/HomePage.vue'
+import OrderPage from 'pages/OrderPage.vue'
 
+const routes = [
   {
     path: '/',
-    component: () => import('layouts/MainLayout.vue'),
+    component: MainLayout,
     children: [
       {
-        path: '',
+        path: 'Login',
         name: 'Login',
-        component: () => import('pages/LoginPage.vue')
+        component: LoginPage
       },
       {
         path: 'Signup',
         name: 'Signup',
-        component: () => import('pages/SignupPage.vue')
+        component: SignupPage
       },
       {
         path: 'Home',
         name: 'Home',
-        component: () => import('pages/HomePage.vue')
+        component: HomePage
+      },
+      {
+        path: 'Order',
+        name: 'Order',
+        component: OrderPage
       }
     ]
   },

@@ -12,13 +12,14 @@
         />
 
         <q-toolbar-title>
-          Ordee Grill App
+          Order Grill App
         </q-toolbar-title>
 
         <q-btn
           type="submit"
           label="LOG OUT"
           color="primary"
+          @click="logout"
         />
       </q-toolbar>
     </q-header>
@@ -39,6 +40,9 @@
           v-for="link in essentialLinks"
           :key="link.title"
           v-bind="link"
+          @click="$router.push({
+            path: link.title === 'Home' ? 'Home' : 'Order'
+          })"
         />
       </q-list>
     </q-drawer>
@@ -49,11 +53,10 @@
         <h3>Menu Order Grill</h3>
         <q-card>
           <q-card-section>
-            <!-- Tampilkan daftar menu di sini -->
-            <!-- Misalnya menggunakan v-for untuk menampilkan daftar menu -->
-            <q-item v-for="(menu, index) in menuList" :key="index">
-              <q-item-section>{{ menu.name }}</q-item-section>
-              <q-item-section side>{{ menu.price }}</q-item-section>
+             <q-item v-for="(menu, index) in menuList" :key="index">
+              <q-item-section>{{ menu.menu_name }}</q-item-section>
+              <q-item-section side>{{ menu.menu_price }}</q-item-section>
+
             </q-item>
           </q-card-section>
         </q-card>
@@ -64,74 +67,169 @@
         <h3>Your Order</h3>
         <q-card>
           <q-card-section>
-            <!-- Tampilkan daftar pesanan pengguna di sini -->
-            <!-- Misalnya menggunakan v-for untuk menampilkan daftar pesanan -->
             <q-item v-for="(order, index) in userOrders" :key="index">
-              <q-item-section>{{ order.name }}</q-item-section>
-              <q-item-section side>{{ order.quantity }}</q-item-section>
-              <q-item-section side>{{ order.total }}</q-item-section>
+              <q-item-section>{{ order.menu_name }}</q-item-section>
+              <q-item-section side>{{ order.order_total }}</q-item-section>
+              <q-item-section side>{{ order.total_price }}</q-item-section>
+              <q-item-section side>{{ order.order_at }}</q-item-section>
+              <q-btn
+                type="submit"
+                label="Edit"
+                color="primary"
+                @click="updateOrderDialog = true"
+              />
+              <q-btn
+                  type="submit"
+                  label="Delete"
+                  color="primary"
+                  @click="deleteOrder(order.order_id)"
+              />
             </q-item>
           </q-card-section>
         </q-card>
       </div>
+
+      <q-dialog v-model="updateOrderDialog">
+        <q-card style="min-width: 450px;">
+          <q-card-section>
+            <div class="text-h5">Menu</div>
+          </q-card-section>
+
+          <q-card-section class="q-pt-none">
+            <q-input dense v-model="updatedOrder.menu_name" autofocus @keyup.enter="updateOrderDialog = false"/>
+          </q-card-section>
+
+          <q-card-section>
+            <div class="text-h5">Quantity</div>
+          </q-card-section>
+
+          <q-card-section class="q-pt-none">
+            <q-input dense v-model="updatedOrder.order_total" autofocus @keyup.enter="updateOrderDialog = false"/>
+          </q-card-section>
+
+          <q-card-action align="right" class="text-primary">
+            <q-btn flat label="Update" @click="updateOrder" v-close-popup color="primary"/>
+            <q-btn flat label="Cancel" v-close-popup/>
+          </q-card-action>
+        </q-card>
+      </q-dialog>
     </q-page-container>
   </q-layout>
 </template>
 
-<script>
-import { defineComponent, ref } from 'vue'
+<script setup>
+import { ref, onMounted } from 'vue'
 import EssentialLink from 'components/EssentialLink.vue'
+import { api } from 'src/boot/axios'
+import router from 'src/router'
 
-const linksList = [
-  {
-    title: 'Home',
-    caption: 'Home Page',
-    icon: 'home'
-    // Bakal Ngarah kedalam Home Page
-  },
-  {
-    title: 'Make Order',
-    caption: 'Order Menu from OrderGrill',
-    icon: 'note'
-    // bakal ngarah kedalam page make order
-  }
-]
+const leftDrawerOpen = ref(false)
+const isLoggedin = ref(false)
+const menuList = ref([])
+const userOrders = ref([])
+const updateOrderDialog = ref(false)
+const updatedOrder = ref({
+  menu_name: '',
+  order_total: ''
+})
+const essentialLinks = ref([
+  { title: 'Home', to: 'Home' },
+  { title: 'Order', to: 'Order' }
+])
 
-export default defineComponent({
-  name: 'MainLayout',
+// Mengecek Token dan menampilkan menu
+onMounted(async () => {
+  const token = localStorage.getItem('token')
+  console.log('token', token)
 
-  components: {
-    EssentialLink
-  },
-
-  setup () {
-    const leftDrawerOpen = ref(false)
-    const isLoggedin = ref(false)
-
-    // Data untuk daftar menu dan daftar pesanan pengguna
-    const menuList = [
-      { name: 'Menu 1', price: '$10' },
-      { name: 'Menu 2', price: '$15' },
-      { name: 'Menu 3', price: '$8' }
-      // Tambahkan menu lainnya jika diperlukan
-    ]
-
-    const userOrders = [
-      { name: 'Menu 1', quantity: 2, total: '$20' },
-      { name: 'Menu 3', quantity: 1, total: '$8' }
-      // Tambahkan pesanan lainnya jika diperlukan
-    ]
-
-    return {
-      essentialLinks: linksList,
-      leftDrawerOpen,
-      menuList,
-      userOrders,
-      isLoggedin,
-      toggleLeftDrawer () {
-        leftDrawerOpen.value = !leftDrawerOpen.value
-      }
-    }
+  if (token) {
+    isLoggedin.value = true
+    checkToken(token)
   }
 })
+
+const checkToken = async (localToken) => {
+  try {
+    const response = await api.post('Checker', {
+      token: localToken
+    })
+    console.log('response axios', response)
+    console.log(response.data)
+
+    if (response.data.success) {
+      const menuResponse = await api.get('Menu')
+      menuList.value = menuResponse.data
+    } else {
+      console.error('error: token :', response.data.message)
+    }
+  } catch (error) {
+    console.error('Error token', error)
+  }
+}
+
+// Data buat ngambil Daftar Order
+onMounted(async () => {
+  const Token = localStorage.getItem('token')
+  try {
+    if (Token) {
+      const response = await api.post('Order', {
+        token: Token
+      })
+      userOrders.value = response.data
+      console.log(response.data)
+      console.log('Punya Token setelah hasil data menunya keluar', Token)
+    } else {
+      console.error('Token missing')
+    }
+  } catch (error) {
+    console.log('Error Showing Order', error)
+  }
+})
+const logout = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await api.post('Logout', { token })
+
+    if (response.data.delete) {
+      localStorage.removeItem('token')
+      router().push({
+        path: 'Login'
+      })
+    } else {
+      console.error('Failed to Delete Token', response.data.message)
+    }
+  } catch (error) {
+    console.error('Error Log Out : ', error)
+  }
+}
+const deleteOrder = async (orderId) => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await api.post('Delete', {
+      token,
+      order_id: orderId
+    })
+    console.log = response.data
+  } catch (error) {
+    console.error('Error deleting order:', error)
+  }
+}
+const updateOrder = async () => {
+  try {
+    const token = localStorage.getItem('token')
+    const response = await api.post('Update', {
+      token,
+      menu_name: updatedOrder.value.menu_name,
+      order_total: updatedOrder.value.order_total
+    })
+    if (response.data.status) {
+      updateOrderDialog.value = false
+    } else {
+      console.error('Failed to update order:', response.data.message)
+    }
+  } catch (error) {
+    console.error('Error updating order:', error)
+  }
+}
+
 </script>
