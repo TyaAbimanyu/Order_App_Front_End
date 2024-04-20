@@ -10,7 +10,7 @@ const routes = [
     component: MainLayout,
     children: [
       {
-        path: 'Login',
+        path: '',
         name: 'Login',
         component: LoginPage
       },

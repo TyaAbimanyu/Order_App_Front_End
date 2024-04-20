@@ -8,7 +8,6 @@
           round
           icon="menu"
           aria-label="Menu"
-          @click="toggleLeftDrawer"
         />
 
         <q-toolbar-title>
@@ -25,7 +24,6 @@
     </q-header>
 
     <q-drawer
-      v-model="leftDrawerOpen"
       show-if-above
       bordered
     >
@@ -76,160 +74,101 @@
                 type="submit"
                 label="Edit"
                 color="primary"
-                @click="updateOrderDialog = true"
+                @click="btnUpdate(order)"
               />
               <q-btn
                   type="submit"
                   label="Delete"
                   color="primary"
-                  @click="deleteOrder(order.order_id)"
+                  @click="btnDelete(order)"
               />
             </q-item>
           </q-card-section>
         </q-card>
       </div>
-
-      <q-dialog v-model="updateOrderDialog">
-        <q-card style="min-width: 450px;">
-          <q-card-section>
-            <div class="text-h5">Menu</div>
-          </q-card-section>
-
-          <q-card-section class="q-pt-none">
-            <q-input dense v-model="updatedOrder.menu_name" autofocus @keyup.enter="updateOrderDialog = false"/>
-          </q-card-section>
-
-          <q-card-section>
-            <div class="text-h5">Quantity</div>
-          </q-card-section>
-
-          <q-card-section class="q-pt-none">
-            <q-input dense v-model="updatedOrder.order_total" autofocus @keyup.enter="updateOrderDialog = false"/>
-          </q-card-section>
-
-          <q-card-action align="right" class="text-primary">
-            <q-btn flat label="Update" @click="updateOrder" v-close-popup color="primary"/>
-            <q-btn flat label="Cancel" v-close-popup/>
-          </q-card-action>
-        </q-card>
-      </q-dialog>
     </q-page-container>
   </q-layout>
-</template>
+
+  <dialogDelete :deleteOrderDialog="deletePrompt" :data="tempData" @onClose="deletePrompt=false" @getOrder="getOrder()"/>
+  <dialogEdit :updateOrderDialog="editPrompt" :data="tempData" @onClose="editPrompt=false" @getOrder="getOrder()"/>
+ </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import EssentialLink from 'components/EssentialLink.vue'
 import { api } from 'src/boot/axios'
-import router from 'src/router'
+import { useRouter } from 'vue-router'
+import dialogEdit from 'components/ComponentUpdateOrder.vue'
+import dialogDelete from 'components/ComponentDeleteOrder.vue'
 
-const leftDrawerOpen = ref(false)
-const isLoggedin = ref(false)
 const menuList = ref([])
 const userOrders = ref([])
-const updateOrderDialog = ref(false)
-const updatedOrder = ref({
-  menu_name: '',
-  order_total: ''
-})
+const router = useRouter()
 const essentialLinks = ref([
   { title: 'Home', to: 'Home' },
   { title: 'Order', to: 'Order' }
 ])
+const tempData = ref([])
+const editPrompt = ref(false)
+const deletePrompt = ref(false)
+
+const btnUpdate = (data) => {
+  editPrompt.value = true
+  tempData.value = data
+}
+const btnDelete = (data) => {
+  deletePrompt.value = true
+  tempData.value = data
+}
+const token = localStorage.getItem('token')
 
 // Mengecek Token dan menampilkan menu
-onMounted(async () => {
-  const token = localStorage.getItem('token')
+function check () {
   console.log('token', token)
 
   if (token) {
-    isLoggedin.value = true
     checkToken(token)
   }
-})
-
-const checkToken = async (localToken) => {
-  try {
-    const response = await api.post('Checker', {
-      token: localToken
-    })
+}
+check()
+function checkToken (localToken) {
+  api.get('Checker', {
+    token: localToken
+  }).then((response) => {
     console.log('response axios', response)
     console.log(response.data)
 
     if (response.data.success) {
-      const menuResponse = await api.get('Menu')
-      menuList.value = menuResponse.data
+      api.get('Menu').then((menuResponse) => {
+        menuList.value = menuResponse.data
+      }).catch((menuError) => {
+        console.error('Error fetching menu:', menuError.data.message)
+      })
     } else {
       console.error('error: token :', response.data.message)
     }
-  } catch (error) {
+  }).catch((error) => {
     console.error('Error token', error)
-  }
+  })
 }
-
-// Data buat ngambil Daftar Order
-onMounted(async () => {
-  const Token = localStorage.getItem('token')
-  try {
-    if (Token) {
-      const response = await api.post('Order', {
-        token: Token
-      })
-      userOrders.value = response.data
-      console.log(response.data)
-      console.log('Punya Token setelah hasil data menunya keluar', Token)
-    } else {
-      console.error('Token missing')
-    }
-  } catch (error) {
-    console.log('Error Showing Order', error)
-  }
-})
-const logout = async () => {
-  try {
-    const token = localStorage.getItem('token')
-    const response = await api.post('Logout', { token })
-
-    if (response.data.delete) {
-      localStorage.removeItem('token')
-      router().push({
-        path: 'Login'
-      })
-    } else {
-      console.error('Failed to Delete Token', response.data.message)
-    }
-  } catch (error) {
-    console.error('Error Log Out : ', error)
-  }
+function getOrder () {
+  api.get('Order', {
+    token: localStorage.getItem('token')
+  }).then((response) => {
+    userOrders.value = response.data
+  }).catch((error) => {
+    console.error('Error token', error)
+  })
 }
-const deleteOrder = async (orderId) => {
-  try {
-    const token = localStorage.getItem('token')
-    const response = await api.post('Delete', {
-      token,
-      order_id: orderId
-    })
-    console.log = response.data
-  } catch (error) {
-    console.error('Error deleting order:', error)
-  }
-}
-const updateOrder = async () => {
-  try {
-    const token = localStorage.getItem('token')
-    const response = await api.post('Update', {
-      token,
-      menu_name: updatedOrder.value.menu_name,
-      order_total: updatedOrder.value.order_total
-    })
-    if (response.data.status) {
-      updateOrderDialog.value = false
-    } else {
-      console.error('Failed to update order:', response.data.message)
-    }
-  } catch (error) {
-    console.error('Error updating order:', error)
-  }
+getOrder()
+function logout () {
+  api.delete('Logout', { token: localStorage.getItem('token') }).then(() => {
+    router.push('/')
+    localStorage.removeItem('token')
+    console.log('Berhasi Logout')
+  }).catch((error) => {
+    console.error('Error token', error)
+  })
 }
 
 </script>

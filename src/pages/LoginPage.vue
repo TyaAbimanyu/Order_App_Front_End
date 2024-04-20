@@ -19,13 +19,11 @@ const username = ref('')
 const password = ref('')
 const router = useRouter()
 
-const login = async () => {
-  try {
-    const response = await api.post('Login', {
-      username: username.value,
-      password: password.value
-    })
-
+function login () {
+  api.post('Login', {
+    username: username.value,
+    password: password.value
+  }).then(response => {
     if (response.status === 200) {
       const token = response.data.token
       localStorage.setItem('token', token)
@@ -34,10 +32,10 @@ const login = async () => {
       console.error('Login Failed:', response.data) // Log detailed error
       alert('Login failed.') // Generic message for user
     }
-  } catch (error) {
+  }).catch(error => {
     console.error('Error logging in:', error)
     alert('An error occurred while logging in.')
-  }
+  })
 }
 
 </script>

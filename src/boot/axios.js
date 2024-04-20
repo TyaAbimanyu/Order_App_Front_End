@@ -7,7 +7,39 @@ import axios from 'axios'
 // good idea to move this instance creation inside of the
 // "export default () => {}" function below (which runs individually
 // for each client)
-const api = axios.create({ baseURL: 'http://localhost:8080/' })
+
+const api = axios.create({
+  baseURL: 'http://localhost:8080/',
+  transformRequest: [(data, headers) => {
+    if (localStorage.getItem('token') !== null && localStorage.getItem('token') !== ' ') {
+      headers.Authorization = 'Bearer ' + localStorage.getItem('token')
+    }
+    if (headers.Accept === '*/*') {
+      const formData = Object.keys(data).map(key => encodeURIComponent(key) + '=' + encodeURIComponent(data[key])).join('&')
+
+      return formData
+    } else {
+      const objData = new FormData()
+      for (const index in data) {
+        if (Array.isArray(data[index])) {
+          for (const indexArray in data[index]) {
+            objData.append(index + [], data[index][indexArray])
+          }
+        } else {
+          objData.append(index, data[index])
+        }
+      }
+      return objData
+    }
+  }]
+})
+
+api.interceptors.request.use((headers) => {
+  if (headers.method === 'put' || headers.method === 'put') {
+    headers.headers.Accept = '*/*'
+  }
+  return headers
+})
 
 export default boot(({ app }) => {
   // for use inside Vue files (Options API) through this.$axios and this.$api

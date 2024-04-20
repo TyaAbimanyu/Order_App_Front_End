@@ -8,7 +8,6 @@
           round
           icon="menu"
           aria-label="Menu"
-          @click="toggleLeftDrawer"
         />
 
         <q-toolbar-title>
@@ -71,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref } from 'vue'
 import EssentialLink from 'components/EssentialLink.vue'
 import { api } from 'src/boot/axios'
 
@@ -79,68 +78,57 @@ const leftDrawerOpen = ref(false)
 const menuList = ref([])
 const menuName = ref('')
 const quantity = ref('')
-const isLoggedin = ref(false)
 const essentialLinks = ref([
   { title: 'Home', to: 'Home' },
   { title: 'Order', to: 'Order' }
 ])
 
+const token = localStorage.getItem('token')
 // Ambil daftar menu saat komponen dipasang
-onMounted(async () => {
-  const token = localStorage.getItem('token')
+function check () {
   console.log('token', token)
 
   if (token) {
-    isLoggedin.value = true
-    await checkToken(token)
+    checkToken(token)
   }
-})
+}
+check()
+function checkToken (localToken) {
+  api.get('Checker', {
 
-const checkToken = async (localToken) => {
-  try {
-    const response = await api.post('Checker', {
-      token: localToken
-    })
+  }).then((response) => {
     console.log('response axios', response)
     console.log(response.data)
 
     if (response.data.success) {
-      const menuResponse = await api.get('Menu')
-      menuList.value = menuResponse.data
+      api.get('Menu').then((menuResponse) => {
+        menuList.value = menuResponse.data
+      }).catch((menuError) => {
+        console.error('Error fetching menu:', menuError.data.message)
+      })
     } else {
       console.error('error: token :', response.data.message)
     }
-  } catch (error) {
+  }).catch((error) => {
     console.error('Error token', error)
-  }
+  })
 }
-
-const orderMenu = async () => {
-  const Token = localStorage.getItem('token')
-  console.log('token', Token)
-  try {
-    if (Token) {
-      const response = await api.post('AddOrder', {
-        menu_name: menuName.value,
-        order_total: quantity.value,
-        token: Token
-      })
-      console.log(menuName.value)
-      console.log(quantity.value)
-      console.log(response.data)
-
-      // Reset nilai input setelah ditambahkan
+function orderMenu () {
+  const token = localStorage.getItem('token')
+  const data = {
+    token,
+    menu_name: menuName.value,
+    order_total: quantity.value
+  }
+  api.post('AddOrder', data)
+    .then((response) => {
+      console.log('Order successful! UUID: ', response.data.uu_id_o)
       menuName.value = ''
       quantity.value = ''
-    } else {
-      console.error('Token missing')
-    }
-  } catch (error) {
-    console.log('Error Adding Order', error)
-  }
+    })
+    .catch((error) => {
+      console.log('Error Adding Order', error)
+    })
 }
-// // Fungsi untuk menampilkan atau menyembunyikan drawer
-// const toggleLeftDrawer = () => {
-//   leftDrawerOpen.value = !leftDrawerOpen.value
-// }
+
 </script>

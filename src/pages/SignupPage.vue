@@ -6,25 +6,33 @@
         filled
         v-model="username"
         label="Username"
-        required
-        :error="usernameError ? 'Username must be between 8 and 16 Characters':null"
-      />
+
+        />
+        <p style="color: red">{{ usernameError }}</p>
       <q-input
         filled
         v-model="email"
         label="Email"
         type="email"
-        required
-        :error="emailError ? 'Invalid email Input':null"
+
       />
+      <p style="color : red">{{emailError}}</p>
       <q-input
         filled
         v-model="password"
         label="Password"
         type="password"
-        required
-        :error="passwordError ? 'Password must be between 8 and 16  Characters and contain least one letter and one number':null"
-      />
+
+        />
+        <p style="color: red;">{{passwordError}}</p>
+        <q-input
+        filled
+        v-model="confirmPassword"
+        label="Confirm Password"
+        type="password"
+
+        />
+        <p style="color: red;">{{confirmPasswordError}}</p>
       <q-btn
         type="submit"
         label="REGISTER"
@@ -42,53 +50,36 @@ import { useRouter } from 'vue-router'
 const username = ref('')
 const email = ref('')
 const password = ref('')
+const confirmPassword = ref('')
 const router = useRouter()
 
 const usernameError = ref('')
 const emailError = ref('')
 const passwordError = ref('')
+const confirmPasswordError = ref('')
 
-// const disableSubmit = computed(() => usernameError.value || emailError.value || passwordError.value)
-
-const signup = async () => {
-  if (username.value.length < 8 || username.value.length > 16) {
-    usernameError.value = true
-    return
-  } else {
-    usernameError.value = ''
-  }
-
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value)) {
-    emailError.value = true
-    return
-  } else {
-    emailError.value = ''
-  }
-
-  if (!/^(?=.*[a-zA-Z])(?=.*\d).{8,16}$/.test(password.value)) {
-    passwordError.value = true
-    return
-  } else {
-    passwordError.value = ''
-  }
-
-  try {
-    const response = await api.post('Signup', {
-      username: username.value,
-      email: email.value,
-      password: password.value
+const signup = () => {
+  api.post('Signup', {
+    username: username.value,
+    email: email.value,
+    password: password.value,
+    confirmPassword: confirmPassword.value
+  })
+    .then((response) => {
+      if (response.status === 200) {
+        router.push({ path: '/' })
+      } else {
+        console.error('Signup Failed:', response.data)
+        alert('Signup failed.')
+      }
     })
-
-    if (response.status === 200) {
-      // Login Buat ntar Signup
-      router.push({ path: '/' })
-    } else {
-      console.error('Login Failed:', response.data) // Log detailed error
-      alert('Login failed.')
-    }
-  } catch (error) {
-    console.error('Error logging in:', error)
-    alert('An error occurred while logging in.')
-  }
+    .catch((error) => {
+      console.error('Error signing up:', error.response.data)
+      usernameError.value = error.response.data.messages.username
+      emailError.value = error.response.data.messages.email
+      passwordError.value = error.response.data.messages.password
+      confirmPasswordError.value = error.response.data.messages.confirmPassword
+    })
 }
+
 </script>
