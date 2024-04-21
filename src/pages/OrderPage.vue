@@ -47,7 +47,9 @@
           <q-card-section>
              <q-item v-for="(menu, index) in menuList" :key="index">
               <q-item-section>{{ menu.menu_name }}</q-item-section>
+
               <q-item-section side>{{ menu.menu_price }}</q-item-section>
+
             </q-item>
           </q-card-section>
         </q-card>
@@ -59,8 +61,11 @@
         <q-card>
           <q-card-section>
             <!-- Form untuk menambahkan pesanan -->
-            <q-input v-model="menuName" label="Menu Name" /> <!-- Gunakan 'menuName' sebagai v-model -->
-            <q-input v-model="quantity" type="number" label="Quantity Your Order" /> <!-- Gunakan 'quantity' sebagai v-model -->
+            <q-input v-model="menuName" label="Menu Name" />
+            <p style="color: red;">{{menuNameError}}</p>
+            <q-input v-model="quantity" type="number" label="Quantity Your Order" />
+            <p style="color: red;">{{quantityError}}</p>
+
             <q-btn color="primary" label="Order" @click="orderMenu" />
           </q-card-section>
         </q-card>
@@ -82,6 +87,8 @@ const essentialLinks = ref([
   { title: 'Home', to: 'Home' },
   { title: 'Order', to: 'Order' }
 ])
+const menuNameError = ref('')
+const quantityError = ref('')
 
 const token = localStorage.getItem('token')
 // Ambil daftar menu saat komponen dipasang
@@ -128,6 +135,8 @@ function orderMenu () {
     })
     .catch((error) => {
       console.log('Error Adding Order', error)
+      menuNameError.value = error.response.data.messages.message.menuName
+      quantityError.value = error.response.data.messages.message.quantity
     })
 }
 
