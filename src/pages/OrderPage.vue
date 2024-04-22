@@ -132,11 +132,14 @@ function orderMenu () {
       console.log('Order successful! UUID: ', response.data.uu_id_o)
       menuName.value = ''
       quantity.value = ''
+
+      menuNameError.value = ''
+      quantityError.value = ''
     })
     .catch((error) => {
       console.log('Error Adding Order', error)
-      menuNameError.value = error.response.data.messages.message.menuName
-      quantityError.value = error.response.data.messages.message.quantity
+      menuNameError.value = error.response.data.messages.message.menu_name
+      quantityError.value = error.response.data.messages.message.order_total
     })
 }
 

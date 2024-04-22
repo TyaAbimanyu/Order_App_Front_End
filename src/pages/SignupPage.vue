@@ -75,10 +75,10 @@ const signup = () => {
     })
     .catch((error) => {
       console.error('Error signing up:', error.response.data)
-      usernameError.value = error.response.data.messages.username
-      emailError.value = error.response.data.messages.email
-      passwordError.value = error.response.data.messages.password
-      confirmPasswordError.value = error.response.data.messages.confirmPassword
+      usernameError.value = error.response.data.messages.message.username
+      emailError.value = error.response.data.messages.message.email
+      passwordError.value = error.response.data.messages.message.password
+      confirmPasswordError.value = error.response.data.messages.message.confirmPassword
     })
 }
 

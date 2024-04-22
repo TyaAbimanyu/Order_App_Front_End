@@ -6,7 +6,9 @@
       </q-card-section>
 
       <q-card-section class="q-pt-none">
-        <q-input dense v-model="updatedOrder.menu_name" autofocus label="Menu_Name"/>
+        <q-input dense v-model="updatedOrder.menu_name" autofocus label="Menu Name"/>
+        <p style="color: red;">{{menuNameError}}</p>
+
       </q-card-section>
 
       <q-card-section>
@@ -14,11 +16,13 @@
       </q-card-section>
 
       <q-card-section class="q-pt-none">
-        <q-input dense v-model="updatedOrder.order_total" autofocus label="Order_Total"/>
+        <q-input dense v-model="updatedOrder.order_total" autofocus label="Order Total"/>
+        <p style="color: red;">{{quantityError}}</p>
+
       </q-card-section>
 
       <q-card-action align="right" class="text-primary">
-        <q-btn flat label="Update" @click="updateOrder" v-close-popup color="primary"/>
+        <q-btn flat label="Update" @click="updateOrder" color="primary" @hide="emits('onClose')"/>
         <q-btn flat label="Cancel" v-close-popup/>
       </q-card-action>
     </q-card>
@@ -43,6 +47,10 @@ const updatedOrder = ref({
   order_total: ''
 })
 
+const menuNameError = ref('')
+const quantityError = ref('')
+// const isDisable = ref(false)
+
 watch(() => props.updateOrderDialog, (newVal) => {
   if (newVal) {
     updatedOrder.value.menu_name = props.data.menu_name
@@ -50,17 +58,21 @@ watch(() => props.updateOrderDialog, (newVal) => {
   } else {
     updatedOrder.value.menu_name = ''
     updatedOrder.value.order_total = ''
+    menuNameError.value = ''
+    quantityError.value = ''
   }
 })
 
 function updateOrder () {
-  console.log('UUID', props.data.uu_id_o)
-  emits('onClose')
+  // emits('onClose')
+  // console.log('UUID', props.data.uu_id_o)
   api.put('Update', {
     uu_id_o: props.data.uu_id_o,
     menu_name: updatedOrder.value.menu_name,
     order_total: updatedOrder.value.order_total
   }).then((response) => {
+    emits('onClose')
+
     console.log('response axios', response)
     emits('getOrder')
     if (response === true) {
@@ -69,6 +81,8 @@ function updateOrder () {
       console.log('Failed Update Data : ', response)
     }
   }).catch((error) => {
+    menuNameError.value = error.response.data.messages.message.menu_name
+    quantityError.value = error.response.data.messages.message.order_total
     console.error('Error Updating order:', error)
   })
 }

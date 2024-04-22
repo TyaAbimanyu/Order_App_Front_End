@@ -38,7 +38,7 @@ function login () {
     }
   }).catch(error => {
     console.error('Error logging in:', error.response.data)
-    // alert('An error occurred while logging in.')
+    // // alert('An error occurred while logging in.')
     usernameError.value = error.response.data.messages.message.username
     passwordError.value = error.response.data.messages.message.password
   })
