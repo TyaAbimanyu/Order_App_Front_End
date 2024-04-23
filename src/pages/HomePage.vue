@@ -126,7 +126,9 @@ const token = localStorage.getItem('token')
 function check () {
   console.log('token', token)
 
-  if (token) {
+  if (!token) {
+    router.push('/')
+  } else {
     checkToken(token)
   }
 }
@@ -146,9 +148,11 @@ function checkToken (localToken) {
       })
     } else {
       console.error('error: token :', response.data.message)
+      router.push('/')
     }
   }).catch((error) => {
     console.error('Error token', error)
+    router.push('/')
   })
 }
 function getOrder () {

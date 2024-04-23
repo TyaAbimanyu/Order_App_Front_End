@@ -78,8 +78,10 @@
 import { ref } from 'vue'
 import EssentialLink from 'components/EssentialLink.vue'
 import { api } from 'src/boot/axios'
+import { useRouter } from 'vue-router'
 
 const leftDrawerOpen = ref(false)
+const router = useRouter()
 const menuList = ref([])
 const menuName = ref('')
 const quantity = ref('')
@@ -95,14 +97,16 @@ const token = localStorage.getItem('token')
 function check () {
   console.log('token', token)
 
-  if (token) {
+  if (!token) {
+    router.push('/')
+  } else {
     checkToken(token)
   }
 }
 check()
 function checkToken (localToken) {
   api.get('Checker', {
-
+    token: localToken
   }).then((response) => {
     console.log('response axios', response)
     console.log(response.data)
@@ -115,9 +119,11 @@ function checkToken (localToken) {
       })
     } else {
       console.error('error: token :', response.data.message)
+      router.push('/')
     }
   }).catch((error) => {
     console.error('Error token', error)
+    router.push('/')
   })
 }
 function orderMenu () {
